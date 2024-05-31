@@ -1,3 +1,10 @@
-/bot/myenv
-/bot/__pychache__
-bot/__pycache__/openai.cpython-311.pyc
+/myenv
+/venv
+/__pychache__
+/__pycache__/openai.cpython-311.pyc
+/css
+/scripts
+/public
+/img
+.env
+huggingface.py
