@@ -8,3 +8,6 @@
 /img
 .env
 huggingface.py
+src/apis/ai/__pycache__/*
+src/apis/ai/__pycache__/*
+src/apis/data/__pycache__/*
