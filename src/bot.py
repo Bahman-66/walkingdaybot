@@ -7,6 +7,7 @@ from telegram import Update, ForceReply, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 
 from apis.ai.gemini import call_gemini_api
+from apis.ai.huggingface_bart import summarize
 from apis.ai.openai import call_openai_api
 from apis.ai.prompt_generator import create_weather_prompt
 from apis.data.weather import fetch_location_id, fetch_weather_data
@@ -33,12 +34,10 @@ user_requests = {}
 user_location_ids = {}
 user_states = {}
 
-
-
 def create_menu_keyboard():
     """Creates a keyboard with buttons for menu options."""
     keyboard = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton("Go for a Walk "), KeyboardButton("About Bot ")]],
+        keyboard=[[KeyboardButton("Go for a Walk "), KeyboardButton("About Bot "), KeyboardButton("Summarize Text")]],
         resize_keyboard=True,
         one_time_keyboard=True
     )
@@ -112,6 +111,9 @@ async def handle_menu_button(update: Update, context: CallbackContext):
     if user_choice == "Go for a Walk":
         user_states[user_id] = 'awaiting_location'
         await update.message.reply_text("Please provide your location (city name):", reply_markup=ForceReply(selective=True))
+    if user_choice == "Summarize Text":
+        user_states[user_id] = 'awaiting_txt'
+        await update.message.reply_text("Please provide your text:", reply_markup=ForceReply(selective=True))
     elif user_choice == "About Bot":
         about_bot_text = "This bot helps you with finding the best time for a walk based on the weather forecast. Feel free to explore the options!"
         await update.message.reply_text(about_bot_text)
@@ -132,13 +134,21 @@ async def handle_location_input(update: Update, context: CallbackContext):
             await walk(update, context)  # Call the walk function
         else:
             await update.message.reply_text("Could not find location. Please try again with a valid city name.")
+    elif user_states.get(user_id) == 'awaiting_txt':
+        txt = update.message.text.strip()
+        result = summarize(txt)
+
+        if result:
+            user_states[user_id] = None  # Reset user state
+            await update.message.reply_text(result)
+        else:
+            await update.message.reply_text("Could not summarized.")
     else:
         await update.message.reply_text("Please use the menu to select an option.")
 
-
 # Add command handlers to the application
 application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.Regex("Go for a Walk|About Bot"), handle_menu_button))
+application.add_handler(MessageHandler(filters.Regex("Go for a Walk|About Bot|Summarize Text"), handle_menu_button))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location_input))
 
 # Set up webhook
