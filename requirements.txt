@@ -3,3 +3,5 @@ python-telegram-bot>=20.0a0
 python-dotenv>=0.19.2
 python-telegram-bot[webhooks]
 python-dateutil
+gradio_client
+google-generativeai

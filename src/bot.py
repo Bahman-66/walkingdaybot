@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from telegram import Update, ForceReply, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 
+from apis.ai.gemini import call_gemini_api
 from apis.ai.openai import call_openai_api
 from apis.ai.prompt_generator import create_weather_prompt
 from apis.data.weather import fetch_location_id, fetch_weather_data
@@ -88,12 +89,15 @@ async def walk(update: Update, context: CallbackContext):
         prompt = create_weather_prompt(weather_data)
 
         # Make request to GPT-4 API with the correct parameters (replace with your implementation)
-        response = call_openai_api(prompt)
+        # response = call_openai_api(prompt)
 
+        # if response:
+        #     # Extract and print the response from the API (replace with your existing logic)
+        #     await update.message.reply_text(
+        #         response['choices'][0]['message']['content'].replace("user", user.mention_html()))
+        response = call_gemini_api(prompt)
         if response:
-            # Extract and print the response from the API (replace with your existing logic)
-            await update.message.reply_text(
-                response['choices'][0]['message']['content'].replace("user", user.mention_html()))
+            await update.message.reply_text(response)
         else:
             await update.message.reply_text("Failed to fetch response from OpenAI API")
     else:
