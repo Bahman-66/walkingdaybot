@@ -120,9 +120,7 @@ async def finance(update: Update, context: CallbackContext):
 
     if finance_data:
         # Prepare input for the model (replace with your existing logic)
-        stock_data = create_weather_prompt(finance_data)
-
-        prompt = generate_stock_prompt(stock_data)
+        prompt = generate_stock_prompt(finance_data)
         
         if prompt:
             response = call_gemini_api(prompt)
