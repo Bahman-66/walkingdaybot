@@ -123,6 +123,7 @@ async def finance(update: Update, context: CallbackContext):
         stock_data = create_weather_prompt(finance_data)
 
         prompt = generate_stock_prompt(stock_data)
+        
         if prompt:
             response = call_gemini_api(prompt)
             await update.message.reply_text(response)
@@ -155,16 +156,9 @@ async def handle_input(update: Update, context: CallbackContext):
             await update.message.reply_text(result)
         else:
             await update.message.reply_text("Could not summarized.")
+            
     elif user_states.get(user_id) == 'awaiting_finance':
-        txt = update.message.text.strip()
-        prompt = get_stock_data(txt)
-        result = call_gemini_api(prompt)
-
-        if result:
-            user_states[user_id] = None  # Reset user state
-            await update.message.reply_text(result)
-        else:
-            await update.message.reply_text("Could not summarized.")
+        await finance(update , context)
     else:
         await update.message.reply_text("Please use the menu to select an option.")
 
