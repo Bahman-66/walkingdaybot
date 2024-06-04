@@ -101,35 +101,6 @@ async def walk(update: Update, context: CallbackContext):
         await update.message.reply_html(
             f"Dear {user.mention_html()}, weather information is missing, please try later.")
 
-async def finance(update: Update, context: CallbackContext):
-    user = update.effective_user
-    user_id = user.id
-
-    logging.info(f"Finance: {user.mention_html()}")
-
-    # Ensure user has a location ID set
-    if user_id not in user_finance_ids:
-        await update.message.reply_html(
-            f"Dear {user.mention_html()}, please set your stock <stock_name>.",
-            reply_markup=ForceReply(selective=True),
-        )
-        return
-
-    fiance_symbol = user_finance_ids[user_id]
-    finance_data = get_stock_data(fiance_symbol)
-
-    if finance_data:
-        # Prepare input for the model (replace with your existing logic)
-        prompt = generate_stock_prompt(finance_data)
-        
-        if prompt:
-            response = call_gemini_api(prompt)
-            await update.message.reply_text(response)
-        else:
-            await update.message.reply_text("Failed to fetch response from ALPHA API")
-    else:
-        await update.message.reply_html(
-            f"Dear {user.mention_html()}, weather information is missing, please try later.")
 
 async def handle_input(update: Update, context: CallbackContext):
     """Handles user input for location after selecting 'Go for a Walk'."""
@@ -156,7 +127,33 @@ async def handle_input(update: Update, context: CallbackContext):
             await update.message.reply_text("Could not summarized.")
             
     elif user_states.get(user_id) == 'awaiting_finance':
-        await finance(update , context)
+        user = update.effective_user
+
+        logging.info(f"Finance: {user.mention_html()}")
+
+        # Ensure user has a location ID set
+        if user_id not in user_finance_ids:
+            await update.message.reply_html(
+                f"Dear {user.mention_html()}, please set your stock <stock_name>.",
+                reply_markup=ForceReply(selective=True),
+            )
+            return
+
+        fiance_symbol = user_finance_ids[user_id]
+        finance_data = get_stock_data(fiance_symbol)
+
+        if finance_data:
+            # Prepare input for the model (replace with your existing logic)
+            prompt = generate_stock_prompt(finance_data)
+            
+            if prompt:
+                response = call_gemini_api(prompt)
+                await update.message.reply_text(response)
+            else:
+                await update.message.reply_text("Failed to fetch response from ALPHA API")
+        else:
+            await update.message.reply_html(
+                f"Dear {user.mention_html()}, finance information is missing, please try later.")
     else:
         await update.message.reply_text("Please use the menu to select an option.")
 
