@@ -9,7 +9,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from apis.ai.gemini import call_gemini_api
 from apis.ai.huggingface_bart import summarize
 from apis.ai.openai import call_openai_api
-from apis.ai.prompt_generator import create_weather_prompt, generate_stock_prompt
+from apis.ai.prompt_generator import create_weather_prompt, generate_stock_prompt_with_full_data
 from apis.data.finance import get_stock_data
 from apis.data.weather import fetch_location_id, fetch_weather_data
 
@@ -131,20 +131,12 @@ async def handle_input(update: Update, context: CallbackContext):
 
         logging.info(f"Finance: {user.mention_html()}")
 
-        # Ensure user has a location ID set
-        if user_id not in user_finance_ids:
-            await update.message.reply_html(
-                f"Dear {user.mention_html()}, please set your stock <stock_name>.",
-                reply_markup=ForceReply(selective=True),
-            )
-            return
-
-        fiance_symbol = user_finance_ids[user_id]
+        fiance_symbol = update.message.text.strip()
         finance_data = get_stock_data(fiance_symbol)
 
         if finance_data:
             # Prepare input for the model (replace with your existing logic)
-            prompt = generate_stock_prompt(finance_data)
+            prompt = generate_stock_prompt_with_full_data(finance_data)
             
             if prompt:
                 response = call_gemini_api(prompt)
