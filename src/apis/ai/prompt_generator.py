@@ -61,6 +61,10 @@ def generate_stock_prompt_with_full_data(stock_data):
     most_recent_date = list(time_series.keys())[0]
     most_recent_data = time_series[most_recent_date]
 
+    # Previous day's data
+    previous_date = list(time_series.keys())[1]
+    previous_data = time_series[previous_date]
+
     # Generate the prompt
     prompt = (
         f"Stock Symbol: {symbol}\n"
@@ -73,6 +77,13 @@ def generate_stock_prompt_with_full_data(stock_data):
         f"Low: {most_recent_data['3. low']}\n"
         f"Close: {most_recent_data['4. close']}\n"
         f"Volume: {most_recent_data['5. volume']}\n"
+        f"\n"
+        f"Previous Day's Data ({previous_date}):\n"
+        f"Open: {previous_data['1. open']}\n"
+        f"High: {previous_data['2. high']}\n"
+        f"Low: {previous_data['3. low']}\n"
+        f"Close: {previous_data['4. close']}\n"
+        f"Volume: {previous_data['5. volume']}\n"
         f"\n"
         f"Summary of Last {total_days} Trading Days:\n"
         f"Average Closing Price: {average_closing_price:.2f}\n"
