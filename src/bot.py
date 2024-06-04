@@ -9,7 +9,8 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from apis.ai.gemini import call_gemini_api
 from apis.ai.huggingface_bart import summarize
 from apis.ai.openai import call_openai_api
-from apis.ai.prompt_generator import create_weather_prompt
+from apis.ai.prompt_generator import create_weather_prompt, generate_stock_prompt
+from apis.data.finance import get_stock_data
 from apis.data.weather import fetch_location_id, fetch_weather_data
 
 # Load environment variables from .env file
@@ -32,6 +33,7 @@ application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 # Global dictionary to store user requests and location IDs
 user_requests = {}
 user_location_ids = {}
+user_finance_ids = {}
 user_states = {}
 
 def create_menu_keyboard():
@@ -41,6 +43,7 @@ def create_menu_keyboard():
             InlineKeyboardButton("About Bot", callback_data='2')
         ],
         [InlineKeyboardButton("Ask Question", callback_data='3'),],
+        [InlineKeyboardButton("Tech Stock Update", callback_data='4'),],
     ]
 
     return InlineKeyboardMarkup(keyboard)
@@ -61,6 +64,9 @@ async def button(update: Update, context: CallbackContext) -> None:
         case '3':
             user_states[user_id] = 'awaiting_txt'
             await query.message.reply_text("Ask me anything:", reply_markup=ForceReply(selective=True))
+        case '4':
+            user_states[user_id] = 'awaiting_finance'
+            await query.message.reply_text("Please provide company stock symbol (example AAPL):", reply_markup=ForceReply(selective=True))
         case _:
             return None
                         
@@ -70,23 +76,6 @@ async def walk(update: Update, context: CallbackContext):
     user_id = user.id
 
     logging.info(f"Walk: {user.mention_html()}")
-
-    # Check if user data exists, if not, initialize it
-    if user_id not in user_requests:
-        user_requests[user_id] = {'count': 0, 'timestamp': datetime.now()}
-
-    # Check request limits
-    user_data = user_requests[user_id]
-    current_time = datetime.now()
-
-    # Reset count if 24 hours have passed since the first request
-    if current_time - user_data['timestamp'] > timedelta(hours=24):
-        user_data['count'] = 0
-        user_data['timestamp'] = current_time
-
-    if user_data['count'] >= 3:
-        await update.message.reply_text("You have reached your request limit for today. Please try again tomorrow.")
-        return
 
     # Ensure user has a location ID set
     if user_id not in user_location_ids:
@@ -112,22 +101,36 @@ async def walk(update: Update, context: CallbackContext):
         await update.message.reply_html(
             f"Dear {user.mention_html()}, weather information is missing, please try later.")
 
-async def handle_menu_button(update: Update, context: CallbackContext):
-    """Handles user interaction with menu buttons."""
-    user_choice = update.message.text.strip()
-    user_id = update.effective_user.id
+async def finance(update: Update, context: CallbackContext):
+    user = update.effective_user
+    user_id = user.id
 
-    if user_choice == "Go for a Walk":
-        user_states[user_id] = 'awaiting_location'
-        await update.message.reply_text("Please provide your location (city name):", reply_markup=ForceReply(selective=True))
-    elif user_choice == "Summarize Text":
-        user_states[user_id] = 'awaiting_txt'
-        await update.message.reply_text("Ask me anything:", reply_markup=ForceReply(selective=True))
-    elif user_choice == "About Bot":
-        about_bot_text = "This bot helps you with finding the best time for a walk based on the weather forecast. Feel free to explore the options!"
-        await update.message.reply_text(about_bot_text)
+    logging.info(f"Finance: {user.mention_html()}")
+
+    # Ensure user has a location ID set
+    if user_id not in user_finance_ids:
+        await update.message.reply_html(
+            f"Dear {user.mention_html()}, please set your stock <stock_name>.",
+            reply_markup=ForceReply(selective=True),
+        )
+        return
+
+    fiance_symbol = user_finance_ids[user_id]
+    finance_data = get_stock_data(fiance_symbol)
+
+    if finance_data:
+        # Prepare input for the model (replace with your existing logic)
+        stock_data = create_weather_prompt(finance_data)
+
+        prompt = generate_stock_prompt(stock_data)
+        if prompt:
+            response = call_gemini_api(prompt)
+            await update.message.reply_text(response)
+        else:
+            await update.message.reply_text("Failed to fetch response from ALPHA API")
     else:
-        await update.message.reply_text("Invalid option. Please choose from the menu.")
+        await update.message.reply_html(
+            f"Dear {user.mention_html()}, weather information is missing, please try later.")
 
 async def handle_input(update: Update, context: CallbackContext):
     """Handles user input for location after selecting 'Go for a Walk'."""
