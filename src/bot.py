@@ -3,8 +3,8 @@ import logging
 from dotenv import load_dotenv
 from collections import defaultdict
 from datetime import datetime, timedelta
-from telegram import Update, ForceReply, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram import Update, ForceReply, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, CallbackQueryHandler
 
 from apis.ai.gemini import call_gemini_api
 from apis.ai.huggingface_bart import summarize
@@ -35,19 +35,35 @@ user_location_ids = {}
 user_states = {}
 
 def create_menu_keyboard():
-    """Creates a keyboard with buttons for menu options."""
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton("Go for a Walk "), KeyboardButton("About Bot "), KeyboardButton("Summarize Text")]],
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    return keyboard
+    keyboard = [
+        [
+            InlineKeyboardButton("Go for a Walk", callback_data='1'),
+            InlineKeyboardButton("About Bot", callback_data='2')
+        ],
+        [InlineKeyboardButton("Ask Question", callback_data='3'),],
+    ]
 
-async def start(update: Update, context: CallbackContext):
-    """Sends a welcome message with the menu keyboard."""
-    intro_text = "Welcome to WalkingDay bot! I can help you with:\n"  # Customize your introduction
-    await update.message.reply_text(intro_text, reply_markup=create_menu_keyboard())
+    return InlineKeyboardMarkup(keyboard)
 
+async def button(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    await query.answer()
+    #user_choice = update.message.text.strip()
+    user_id = update.effective_user.id
+
+    match query.data:
+        case '1':
+            user_states[user_id] = 'awaiting_location'
+            await query.message.reply_text("Please provide your location (city name):", reply_markup=ForceReply(selective=True))
+        case '2':
+            about_bot_text = "This bot helps you with your day to day needs. Feel free to explore the options!"
+            await query.edit_message_text(about_bot_text)
+        case '3':
+            user_states[user_id] = 'awaiting_txt'
+            await query.message.reply_text("Ask me anything:", reply_markup=ForceReply(selective=True))
+        case _:
+            return None
+                        
 async def walk(update: Update, context: CallbackContext):
     """Handles the /walk command (replace with your existing implementation)"""
     user = update.effective_user
@@ -87,13 +103,6 @@ async def walk(update: Update, context: CallbackContext):
         # Prepare input for the model (replace with your existing logic)
         prompt = create_weather_prompt(weather_data)
 
-        # Make request to GPT-4 API with the correct parameters (replace with your implementation)
-        # response = call_openai_api(prompt)
-
-        # if response:
-        #     # Extract and print the response from the API (replace with your existing logic)
-        #     await update.message.reply_text(
-        #         response['choices'][0]['message']['content'].replace("user", user.mention_html()))
         response = call_gemini_api(prompt)
         if response:
             await update.message.reply_text(response)
@@ -111,16 +120,16 @@ async def handle_menu_button(update: Update, context: CallbackContext):
     if user_choice == "Go for a Walk":
         user_states[user_id] = 'awaiting_location'
         await update.message.reply_text("Please provide your location (city name):", reply_markup=ForceReply(selective=True))
-    if user_choice == "Summarize Text":
+    elif user_choice == "Summarize Text":
         user_states[user_id] = 'awaiting_txt'
-        await update.message.reply_text("Please provide your text:", reply_markup=ForceReply(selective=True))
+        await update.message.reply_text("Ask me anything:", reply_markup=ForceReply(selective=True))
     elif user_choice == "About Bot":
         about_bot_text = "This bot helps you with finding the best time for a walk based on the weather forecast. Feel free to explore the options!"
         await update.message.reply_text(about_bot_text)
     else:
         await update.message.reply_text("Invalid option. Please choose from the menu.")
 
-async def handle_location_input(update: Update, context: CallbackContext):
+async def handle_input(update: Update, context: CallbackContext):
     """Handles user input for location after selecting 'Go for a Walk'."""
     user_id = update.effective_user.id
     if user_states.get(user_id) == 'awaiting_location':
@@ -136,7 +145,7 @@ async def handle_location_input(update: Update, context: CallbackContext):
             await update.message.reply_text("Could not find location. Please try again with a valid city name.")
     elif user_states.get(user_id) == 'awaiting_txt':
         txt = update.message.text.strip()
-        result = summarize(txt)
+        result = call_gemini_api(txt)
 
         if result:
             user_states[user_id] = None  # Reset user state
@@ -146,10 +155,14 @@ async def handle_location_input(update: Update, context: CallbackContext):
     else:
         await update.message.reply_text("Please use the menu to select an option.")
 
+async def start(update: Update, context: CallbackContext):
+    """Sends a welcome message with the menu keyboard."""
+    await update.message.reply_text('Please choose an option:', reply_markup=create_menu_keyboard())
+
 # Add command handlers to the application
 application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.Regex("Go for a Walk|About Bot|Summarize Text"), handle_menu_button))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location_input))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_input))
+application.add_handler(CallbackQueryHandler(button))
 
 # Set up webhook
 webhook_url = f"{WEBHOOK}/{TELEGRAM_BOT_TOKEN}"
