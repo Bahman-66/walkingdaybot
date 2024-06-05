@@ -1,11 +1,11 @@
 # Weather Walking Bot
 
-This Telegram bot helps you determine the best time to go for a walk based on weather data. It uses the AccuWeather API to fetch weather data and the OpenAI API to analyze it.
-
+This versatile Telegram bot supports various day-to-day interactions. Utilizing the Gemini for enhanced functionality to provide personalized recommendations and assistance.
 ## Features
 
-- **Get Walk Recommendation:** Users can get the best time for a walk based on the weather data using the `/walk` command.
-- **Daily Limits:** Each user has a maximum of 5 requests per day.
+- **Get Walk Recommendation:** Users can get the best time for a walk based on the weather.
+- **Ask Anything:** You can ask your questions without needing to open any other application to reach the AI.
+- **Stock Updates:** Name your stock and get the latest updates with simple explanations.
 
 ## Setup
 
@@ -38,12 +38,13 @@ This Telegram bot helps you determine the best time to go for a walk based on we
    Add the following lines to the `.env` file:
 
    ```
+   GOOGLE_API_KEY=your_google_api_key
    OPENAI_API_KEY=your_openai_api_key
    WEATHER_API_KEY=your_accuweather_api_key
    TELEGRAM_BOT_TOKEN=your_telegram_bot_token
    PORT=your_port  # e.g., 8443
    WEBHOOK=your_webhook_url  # e.g., https://yourdomain.com/webhook
-   MODEL=your_openai_model  # e.g., text-davinci-003
+   MODEL=your_google_model  # e.g., gemini-1.5
    ```
 
 5. **Run the bot:**
