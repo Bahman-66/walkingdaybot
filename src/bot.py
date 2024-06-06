@@ -1,5 +1,6 @@
 import os
 import logging
+import pathlib
 from dotenv import load_dotenv
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -41,6 +42,7 @@ def create_menu_keyboard():
             InlineKeyboardButton("About Bot", callback_data='2')
         ],
         [InlineKeyboardButton("Ask Question", callback_data='3'),],
+        [InlineKeyboardButton("Send Image With Caption", callback_data='4'),],
     ]
 
     return InlineKeyboardMarkup(keyboard)
@@ -61,6 +63,9 @@ async def button(update: Update, context: CallbackContext) -> None:
         case '3':
             user_states[user_id] = 'awaiting_txt'
             await query.message.reply_text("Ask me anything:", reply_markup=ForceReply(selective=True))
+        case '3':
+            user_states[user_id] = 'awaiting_image'
+            await query.message.reply_text("Send your image:", reply_markup=ForceReply(selective=True))
         case _:
             return None
                         
@@ -152,9 +157,42 @@ async def handle_input(update: Update, context: CallbackContext):
             await update.message.reply_text(result)
         else:
             await update.message.reply_text("Could not summarized.")
+    elif user_states.get(user_id) == 'awaiting_image':
+        photo_file_id = update.message.photo[-1].file_id
+        photo_file = context.bot.get_file(photo_file_id)
+        photo_path = f"downloads/{photo_file_id}.png"
+        photo_file.download(photo_path)
+            
+            # Read the photo bytes
+        photo_bytes = pathlib.Path(photo_path).read_bytes()
+            
+            # Prepare the data dictionary
+        cookie_picture = {
+            'mime_type': 'image/png',
+            'data': photo_bytes
+        }
+        caption = update.message.caption
+        
+        result = call_gemini_api(caption , cookie_picture)
+        if result:
+            user_states[user_id] = None  # Reset user state
+            await update.message.reply_text(result)
+        else:
+            await update.message.reply_text("Could not summarized.")
+
     else:
         await update.message.reply_text("Please use the menu to select an option.")
 
+def handle_photo(update: Update, context: CallbackContext) -> None:
+    # Get the photo and caption from the user
+    photo = update.message.photo[-1]  # Get the highest resolution photo
+    caption = update.message.caption
+
+    # You can do something with the photo and caption here
+    # For example, you can download the photo or process the caption
+
+    update.message.reply_text(f'Received your photo with caption: {caption}')
+    
 async def start(update: Update, context: CallbackContext):
     """Sends a welcome message with the menu keyboard."""
     await update.message.reply_text('Please choose an option:', reply_markup=create_menu_keyboard())

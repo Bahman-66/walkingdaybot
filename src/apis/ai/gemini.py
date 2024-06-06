@@ -13,7 +13,11 @@ import google.generativeai as genai
 genai.configure(api_key=GEMINI_TOKEN)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-def call_gemini_api(prompt):
-    response = model.generate_content(prompt)
+def call_gemini_api(prompt , image):
+    if not image:
+        response = model.generate_content(prompt)
+        return response.text
+    
+    response = model.generate_content(prompt, image)
     return response.text
     
