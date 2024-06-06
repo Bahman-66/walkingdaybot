@@ -19,6 +19,6 @@ def call_gemini_api(prompt , image):
         response = model.generate_content(prompt)
         return response.text
     
-    response = model.generate_content(prompt, image)
+    response = model.generate_content(model , [prompt, image])
     return response.text
     
