@@ -199,7 +199,7 @@ async def start(update: Update, context: CallbackContext):
 
 # Add command handlers to the application
 application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_input))
+application.add_handler(MessageHandler(filters.TEXT & filters.photo & ~filters.COMMAND, handle_input))
 application.add_handler(CallbackQueryHandler(button))
 
 # Set up webhook

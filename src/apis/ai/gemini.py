@@ -6,12 +6,13 @@ import os
 load_dotenv()
 
 GEMINI_TOKEN = os.getenv('GEMINI_TOKEN')
+GEMINI_MODEL =  os.getenv('GEMINI_MODEL')
 
 import google.generativeai as genai
 
 # Initialize the client with your API key
 genai.configure(api_key=GEMINI_TOKEN)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel(GEMINI_MODEL)
 
 def call_gemini_api(prompt , image):
     if not image:
