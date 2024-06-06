@@ -63,7 +63,7 @@ async def button(update: Update, context: CallbackContext) -> None:
         case '3':
             user_states[user_id] = 'awaiting_txt'
             await query.message.reply_text("Ask me anything:", reply_markup=ForceReply(selective=True))
-        case '3':
+        case '4':
             user_states[user_id] = 'awaiting_image'
             await query.message.reply_text("Send your image:", reply_markup=ForceReply(selective=True))
         case _:
@@ -108,7 +108,7 @@ async def walk(update: Update, context: CallbackContext):
         # Prepare input for the model (replace with your existing logic)
         prompt = create_weather_prompt(weather_data)
 
-        response = call_gemini_api(prompt)
+        response = call_gemini_api(prompt, None)
         if response:
             await update.message.reply_text(response)
         else:
@@ -150,7 +150,7 @@ async def handle_input(update: Update, context: CallbackContext):
             await update.message.reply_text("Could not find location. Please try again with a valid city name.")
     elif user_states.get(user_id) == 'awaiting_txt':
         txt = update.message.text.strip()
-        result = call_gemini_api(txt)
+        result = call_gemini_api(txt, None)
 
         if result:
             user_states[user_id] = None  # Reset user state
