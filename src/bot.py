@@ -182,16 +182,6 @@ async def handle_input(update: Update, context: CallbackContext):
 
     else:
         await update.message.reply_text("Please use the menu to select an option.")
-
-def handle_photo(update: Update, context: CallbackContext) -> None:
-    # Get the photo and caption from the user
-    photo = update.message.photo[-1]  # Get the highest resolution photo
-    caption = update.message.caption
-
-    # You can do something with the photo and caption here
-    # For example, you can download the photo or process the caption
-
-    update.message.reply_text(f'Received your photo with caption: {caption}')
     
 async def start(update: Update, context: CallbackContext):
     """Sends a welcome message with the menu keyboard."""
@@ -199,7 +189,7 @@ async def start(update: Update, context: CallbackContext):
 
 # Add command handlers to the application
 application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.TEXT & filters.photo & ~filters.COMMAND, handle_input))
+application.add_handler(MessageHandler(filters.TEXT & filters.PHOTO & ~filters.COMMAND, handle_input))
 application.add_handler(CallbackQueryHandler(button))
 
 # Set up webhook
