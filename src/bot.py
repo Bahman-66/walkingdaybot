@@ -160,9 +160,13 @@ async def handle_input(update: Update, context: CallbackContext):
     elif user_states.get(user_id) == 'awaiting_image':
         photo_file_id = update.message.photo[-1].file_id
         photo_file = context.bot.get_file(photo_file_id)
-        photo_path = f"downloads/{photo_file_id}.png"
-        photo_file.download(photo_path)
+        photo_path = f"downloads/{photo_file_id}.jpg"
+          # Ensure the downloads directory exists
+        os.makedirs(os.path.dirname(photo_path), exist_ok=True)
             
+            # Download the photo asynchronously
+        await photo_file.download_to_drive(photo_path)
+                
             # Read the photo bytes
         photo_bytes = pathlib.Path(photo_path).read_bytes()
             
