@@ -159,22 +159,16 @@ async def handle_input(update: Update, context: CallbackContext):
             await update.message.reply_text("Could not summarized.")
     elif user_states.get(user_id) == 'awaiting_image':
         photo_file_id = update.message.photo[-1].file_id
-        photo_file = context.bot.get_file(photo_file_id)
-        photo_path = f"downloads/{photo_file_id}.jpg"
-          # Ensure the downloads directory exists
-        os.makedirs(os.path.dirname(photo_path), exist_ok=True)
+        photo_file = await context.bot.get_file(photo_file_id)
             
-            # Download the photo asynchronously
-        await photo_file.download_to_drive(photo_path)
-                
-            # Read the photo bytes
-        photo_bytes = pathlib.Path(photo_path).read_bytes()
+            # Download the photo in memory
+        photo_bytes = await photo_file.download_as_bytearray()
             
             # Prepare the data dictionary
         cookie_picture = {
-            'mime_type': 'image/png',
-            'data': photo_bytes
-        }
+                'mime_type': 'image/jpg',
+                'data': photo_bytes
+            }
         caption = update.message.caption
         
         result = call_gemini_api(caption , cookie_picture)
